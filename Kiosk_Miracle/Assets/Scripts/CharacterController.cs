@@ -1,9 +1,7 @@
 using UnityEngine;
 
-public class CharacterController : MonoBehaviour
+public class RobotController : MonoBehaviour
 {
-    public MainController       m_Main;
-
     public Animator             m_BodyAni;
     public Animator             m_FaceAni;
 
@@ -15,6 +13,8 @@ public class CharacterController : MonoBehaviour
 
     public Animator m_Question;
     public Animator m_Surprise;
+
+    public bool isThinking = false;
 
     public bool m_HiCheck       = false;
     public bool m_ThinkCheck    = false;
@@ -28,13 +28,11 @@ public class CharacterController : MonoBehaviour
 
     public int m_RandomSet;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
 
     }
 
-    // Update is called once per frame
     void Update()
     {
         //if ( Input.GetKeyDown( KeyCode.A ) )
@@ -55,14 +53,56 @@ public class CharacterController : MonoBehaviour
         if ( m_ThinkCheck )
         {
             AnimatorStateInfo infoB = m_BodyAni.GetCurrentAnimatorStateInfo(0);
+            AnimatorStateInfo infoQ = m_Question.GetCurrentAnimatorStateInfo(0);
 
-            if ( infoB.IsName("think") && infoB.normalizedTime >= 1.0f )
+            /*if ( infoB.IsName("think") && infoB.normalizedTime >= 1.0f )
             {
                 Idle();
-                // ¾Ö´Ï¸ŞÀÌ¼Ç ÀÌÈÄ ? ¸¶Å© »ç¶óÁö°Ô ÇßÀ½
                 m_Question.gameObject.SetActive(false);
                 m_ThinkCheck = false;
+            }*/
+            float currentTime = infoB.normalizedTime % 1.0f;
+
+            if(isThinking)
+            {
+                if(m_BodyAni.GetFloat("animSpeed") > 0 && currentTime >= 0.7f)
+                {
+                    m_BodyAni.SetFloat("animSpeed", -1f);
+                    m_FaceAni.SetFloat("animSpeed", -1f);
+                }
+                else if(m_BodyAni.GetFloat("animSpeed") < 0 && currentTime <= 0.3f)
+                {
+                    m_BodyAni.SetFloat("animSpeed", 1f);
+                    m_FaceAni.SetFloat("animSpeed", 1f);
+                }
+
+                if(infoQ.IsName("Question") && infoQ.normalizedTime >= 0.8f)
+                {
+                    m_Question.speed = 0;
+                }
+                
             }
+            else
+            {
+                m_Question.speed = 1f;
+                m_BodyAni.SetFloat("animSpeed", 1f);
+                m_FaceAni.SetFloat("animSpeed", 1f);
+
+                if (m_Question.gameObject.activeSelf)
+                {
+                    m_Question.gameObject.SetActive(false);
+                }
+                m_Question.Play("Question", 0, 0.8f);
+
+                m_ThinkCheck = false;
+                /*if(infoB.IsName("think") && infoB.normalizedTime >= 1.0f)
+                {
+                    Idle();
+                    m_Question.gameObject.SetActive(false);
+                    m_ThinkCheck = false;
+                }*/
+            }
+
         }
 
         if ( m_HappyCheck )
@@ -172,11 +212,18 @@ public class CharacterController : MonoBehaviour
 
         m_EyeRendererMaterial.sharedMesh = m_EyeMesh[10];
         m_MouseRendererMaterial.sharedMesh = m_MouseMesh[10];
+
+        isThinking = false;
+        m_Question.gameObject.SetActive(false);
+        m_Surprise.gameObject.SetActive(false);
+
+        //m_BodyAni.CrossFade("idle", 0.2f);
+        //m_FaceAni.CrossFade("idle", 0.2f);
     }
 
     public void Hi()
     {
-        // Ä«¸Ş¶ó¿¡ »ç¶÷ÀÌ ÀÎ½ÄÀÌ µÇ¾úÀ» ¶§ ¹İÀÀ.
+        // ì¹´ë©”ë¼ì— ì‚¬ëŒì´ ì¸ì‹ì´ ë˜ì—ˆì„ ë•Œ ë°˜ì‘.
         Idle();
 
         m_BodyAni.SetBool( "hi", true );
@@ -195,6 +242,7 @@ public class CharacterController : MonoBehaviour
         m_BodyAni.SetBool( "think", true );
 
         m_Question.gameObject.SetActive( true );
+        m_Question.speed = 1;
         m_Question.Play( "Question", 0, 0f );
 
         m_EyeRendererMaterial.sharedMesh = m_EyeMesh[1];
@@ -206,7 +254,7 @@ public class CharacterController : MonoBehaviour
 
     public void Happy()
     {
-        // "Çàº¹ÇÏ¼¼¿ä", "ÁÁÀº ³¯ÀÌ³×¿ä" °°Àº ¹®±¸¿¡ ¹İÀÀ.
+        // "í–‰ë³µí•˜ì„¸ìš”", "ì¢‹ì€ ë‚ ì´ë„¤ìš”" ê°™ì€ ë¬¸êµ¬ì— ë°˜ì‘.
         Idle();
 
         m_BodyAni.SetBool( "happy", true );
@@ -215,13 +263,12 @@ public class CharacterController : MonoBehaviour
         m_MouseRendererMaterial.sharedMesh = m_MouseMesh[2] ;
         m_FaceAni.SetBool( "happy", true );
 
-        m_Main.m_NoAni = false;
         m_HappyCheck = true;
     }
 
     public void Funy()
     {
-        // °³±×³ª ³ó´ã¿¡ ¹İÀÀ.
+        // ê°œê·¸ë‚˜ ë†ë‹´ì— ë°˜ì‘.
         Idle();
 
         m_BodyAni.SetBool( "funy", true );
@@ -235,7 +282,7 @@ public class CharacterController : MonoBehaviour
 
     public void Lover()
     {
-        // "»ç¶ûÇÑ´Ù´Â ´Ü¾î¿¡ ¹İÀÀ."
+        // "ì‚¬ë‘í•œë‹¤"ëŠ” ë‹¨ì–´ì— ë°˜ì‘.
         Idle();
 
         m_BodyAni.SetBool( "lover", true );
@@ -244,13 +291,12 @@ public class CharacterController : MonoBehaviour
         m_MouseRendererMaterial.sharedMesh = m_MouseMesh[4] ;
         m_FaceAni.SetBool( "lover", true );
 
-        m_Main.m_NoAni = false;
         m_LoverCheck = true;
     }
 
     public void Wink()
     {
-        //Áú¹®¿¡ ´äÀÏ¶§ ¹İÀÀ ex) ÀÀ ±×°Ô ¸Â¾Æ
+        // ì§ˆë¬¸ì— ë‹µì¼ ë•Œ ë°˜ì‘ ex) ì‘ ê·¸ê²Œ ë§ì•„
         Idle();
 
         m_BodyAni.SetBool( "wink", true );
@@ -259,13 +305,12 @@ public class CharacterController : MonoBehaviour
         m_MouseRendererMaterial.sharedMesh = m_MouseMesh[5] ;
         m_FaceAni.SetBool( "wink", true );
 
-        m_Main.m_NoAni = false;
         m_WinkCheck = true;
     }
 
     public void Wrong()
     {
-        //Áú¹®¿¡ ´äÀÌ ¾Æ´Ò ¶§ ¹İÀÀ ex) ¾Æ´Ï¾ß 
+        // ì§ˆë¬¸ì— ë‹µì´ ì•„ë‹ ë•Œ ë°˜ì‘ ex) ì•„ë‹ˆì•¼
         Idle();
 
         m_BodyAni.SetBool( "wrong", true );
@@ -279,7 +324,7 @@ public class CharacterController : MonoBehaviour
 
     public void Tell()
     {
-        // ¸»À» ÇÒ ¶§ ¹İÀÀ.
+        // ë§ì„ í•  ë•Œ ë°˜ì‘.
         Idle();
 
         m_BodyAni.SetBool( "tell", true );
@@ -291,7 +336,7 @@ public class CharacterController : MonoBehaviour
 
     public void Surprise()
     {
-        //AiÀÇ ´äÀÌ Æ²·ÈÀ» ¶§ ¹İÀÀ.
+        // AIì˜ ë‹µì´ í‹€ë ¸ì„ ë•Œ ë°˜ì‘.
         Idle();
 
         m_BodyAni.SetBool( "surprise", true );
@@ -308,7 +353,7 @@ public class CharacterController : MonoBehaviour
 
     public void Error()
     {
-        // ÀÎ½Ä ¿À·ù ÀÏ¶§ ¹İÀÀ.
+        // ì¸ì‹ ì˜¤ë¥˜ì¼ ë•Œ ë°˜ì‘.
         Idle();
 
         m_BodyAni.SetBool( "error", true );
@@ -318,135 +363,5 @@ public class CharacterController : MonoBehaviour
         m_FaceAni.SetBool( "error", true );
 
         m_ErrorCheck = true;
-    }
-
-    public void AniController(  )
-    {
-        m_Question.gameObject.SetActive( false );
-
-        m_Surprise.gameObject.SetActive( false );
-
-        //body
-        m_BodyAni.SetBool( "hi", false );
-        m_BodyAni.SetBool( "think", false );
-        m_BodyAni.SetBool( "happy", false );
-        m_BodyAni.SetBool( "funy", false );
-        m_BodyAni.SetBool( "lover", false );
-        m_BodyAni.SetBool( "wink", false );
-        m_BodyAni.SetBool( "wrong", false );
-        m_BodyAni.SetBool( "tell", false );
-        m_BodyAni.SetBool( "surprise", false );
-        m_BodyAni.SetBool( "error", false );
-
-        //face
-        m_FaceAni.SetBool( "hi", false );
-        m_FaceAni.SetBool( "think", false );
-        m_FaceAni.SetBool( "happy", false );
-        m_FaceAni.SetBool( "funy", false );
-        m_FaceAni.SetBool( "lover", false );
-        m_FaceAni.SetBool( "wink", false );
-        m_FaceAni.SetBool( "wrong", false );
-        m_FaceAni.SetBool( "tell", false );
-        m_FaceAni.SetBool( "surprise", false );
-        m_FaceAni.SetBool( "error", false );
-
-
-
-        m_RandomSet = Random.Range(0, 11);
-
-        switch ( m_RandomSet )
-        {
-            case 0:
-                m_BodyAni.SetBool( "hi", true );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[0] ;
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[0] ;
-                m_FaceAni.SetBool( "hi", true );
-                break;
-
-            case 1:
-                m_BodyAni.SetBool( "think", true );
-
-                m_Question.gameObject.SetActive( true );
-                m_Question.Play( "Question", 0, 0f );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[1];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[1];
-                m_FaceAni.SetBool( "think", true );
-                break;
-
-            case 2:
-                m_BodyAni.SetBool( "happy", true );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[2];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[2] ;
-                m_FaceAni.SetBool( "happy", true );
-                break;
-
-            case 3:
-                m_BodyAni.SetBool( "funy", true );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[3];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[3] ;
-                m_FaceAni.SetBool( "funy", true );
-                break;
-
-            case 4:
-                m_BodyAni.SetBool( "lover", true );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[4];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[4] ;
-                m_FaceAni.SetBool( "lover", true );
-                break;
-
-            case 5:
-                m_BodyAni.SetBool( "wink", true );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[5];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[5] ;
-                m_FaceAni.SetBool( "wink", true );
-                break;
-
-            case 6:
-                m_BodyAni.SetBool( "wrong", true );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[6];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[6] ;
-                m_FaceAni.SetBool( "wrong", true );
-                break;
-
-            case 7:
-                m_BodyAni.SetBool( "tell", true );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[7];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[7] ;
-                m_FaceAni.SetBool( "tell", true );
-                break;
-
-            case 8:
-                m_BodyAni.SetBool( "surprise", true );
-
-                m_Surprise.gameObject.SetActive( true );
-                m_Surprise.Play( "Surpise", 0, 0f );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[8];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[8] ;
-                m_FaceAni.SetBool( "surprise", true );
-                break;
-
-            case 9:
-                m_BodyAni.SetBool( "error", true );
-
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[9];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[9] ;
-                m_FaceAni.SetBool( "error", true );
-                break;
-
-            default:
-                Debug.Log( "´ë±â" );
-                m_EyeRendererMaterial.sharedMesh = m_EyeMesh[10];
-                m_MouseRendererMaterial.sharedMesh = m_MouseMesh[10] ;
-                break;
-        }
     }
 }
